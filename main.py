@@ -44,7 +44,7 @@ class CryptoTicker(rumps.App):
         
         # Data storage
         self.coins = ["bitcoin", "ethereum"]  # Default coins
-        self.refresh_interval = 90  # Increased default to 90 seconds for rate limiting
+        self.refresh_interval = 300  # Changed default to 5 minutes (300 seconds)
         self.price_data = {}
         self.config_file = "config.json"
         self.monitoring_active = True
@@ -56,7 +56,7 @@ class CryptoTicker(rumps.App):
         
         # Coin cycling untuk status bar
         self.current_coin_index = 0
-        self.coin_cycle_interval = 4  # 4 detik per coin
+        self.coin_cycle_interval = 5  # Changed default to 5 seconds
         
         # Retry settings untuk API calls
         self.max_retries = 3
@@ -75,7 +75,12 @@ class CryptoTicker(rumps.App):
         
         # Adaptive rate limiting
         self.consecutive_rate_limits = 0
-        self.base_refresh_interval = 90
+        self.base_refresh_interval = 300  # Changed default to 5 minutes
+        
+        # Icon paths untuk trend indicators
+        self.up_icon_path = "up.png"
+        self.down_icon_path = "down.png"
+        self.default_icon_path = "ticker.png"
         
         # Symbol to CoinGecko ID mapping untuk coins populer
         self.symbol_to_id = {
@@ -117,6 +122,9 @@ class CryptoTicker(rumps.App):
         # Load configuration
         self.load_config()
         
+        # Set default icon saat aplikasi dimulai
+        self.update_trend_icon("neutral")
+        
         # Setup menu
         self.setup_menu()
         
@@ -129,39 +137,82 @@ class CryptoTicker(rumps.App):
         add_coins_menu = rumps.MenuItem("Add New Coins", callback=self.add_coin_dialog)
         
         # Refresh intervals submenu - updated dengan nilai lebih tinggi
-        refresh_menu = rumps.MenuItem("Refresh Intervals")
-        refresh_menu.add(rumps.MenuItem("1 minute", callback=lambda _: self.set_refresh_interval(60)))
-        refresh_menu.add(rumps.MenuItem("90 seconds", callback=lambda _: self.set_refresh_interval(90)))
-        refresh_menu.add(rumps.MenuItem("2 minutes", callback=lambda _: self.set_refresh_interval(120)))
-        refresh_menu.add(rumps.MenuItem("3 minutes", callback=lambda _: self.set_refresh_interval(180)))
-        refresh_menu.add(rumps.MenuItem("5 minutes", callback=lambda _: self.set_refresh_interval(300)))
+        self.refresh_menu = rumps.MenuItem("Refresh Intervals")
+        self.refresh_menu_items = {}
+        
+        # Create refresh menu items dengan referensi
+        refresh_options = [
+            (60, "1 minute"),
+            (300, "5 minutes"),
+            (600, "10 minutes")
+        ]
+        
+        for interval, label in refresh_options:
+            menu_item = rumps.MenuItem(label, callback=lambda sender, i=interval: self.set_refresh_interval(i))
+            self.refresh_menu_items[interval] = menu_item
+            self.refresh_menu.add(menu_item)
         
         # Coin cycling intervals submenu
-        cycling_menu = rumps.MenuItem("Coin Cycling")
-        cycling_menu.add(rumps.MenuItem("2 seconds", callback=lambda _: self.set_cycle_interval(2)))
-        cycling_menu.add(rumps.MenuItem("3 seconds", callback=lambda _: self.set_cycle_interval(3)))
-        cycling_menu.add(rumps.MenuItem("4 seconds", callback=lambda _: self.set_cycle_interval(4)))
-        cycling_menu.add(rumps.MenuItem("5 seconds", callback=lambda _: self.set_cycle_interval(5)))
-        cycling_menu.add(rumps.MenuItem("6 seconds", callback=lambda _: self.set_cycle_interval(6)))
-        cycling_menu.add(rumps.MenuItem("10 seconds", callback=lambda _: self.set_cycle_interval(10)))
+        self.cycling_menu = rumps.MenuItem("Coin Cycling")
+        self.cycling_menu_items = {}
+        
+        # Create cycling menu items dengan referensi
+        cycling_options = [
+            (3, "3 seconds"),
+            (5, "5 seconds"),
+            (7, "7 seconds")
+        ]
+        
+        for interval, label in cycling_options:
+            menu_item = rumps.MenuItem(label, callback=lambda sender, i=interval: self.set_cycle_interval(i))
+            self.cycling_menu_items[interval] = menu_item
+            self.cycling_menu.add(menu_item)
         
         # Current coins submenu
         self.coins_menu = rumps.MenuItem("Current Coins")
         
-        # Main menu
+        # Main menu - added "Reset to Default"
         self.menu = [
             add_coins_menu,
-            refresh_menu,
-            cycling_menu,
+            self.refresh_menu,
+            self.cycling_menu,
             self.coins_menu,
             rumps.separator,
-            rumps.MenuItem("Remove All Coins", callback=self.remove_all_coins),
+            rumps.MenuItem("Reset to Default", callback=self.reset_to_default),
             rumps.MenuItem("Manual Refresh", callback=self.manual_refresh),
-            rumps.MenuItem("Next Coin", callback=self.manual_next_coin),
             rumps.separator,
         ]
         
+        # Set initial checkmarks
+        self.update_menu_checkmarks()
         self.update_coins_menu()
+    
+    def update_menu_checkmarks(self):
+        """Update checkmarks pada menu berdasarkan setting saat ini"""
+        # Update refresh interval checkmarks
+        for interval, menu_item in self.refresh_menu_items.items():
+            menu_item.state = 1 if interval == self.refresh_interval else 0
+        
+        # Update cycling interval checkmarks
+        for interval, menu_item in self.cycling_menu_items.items():
+            menu_item.state = 1 if interval == self.coin_cycle_interval else 0
+    
+    def update_trend_icon(self, trend):
+        """Update icon berdasarkan trend"""
+        try:
+            if trend == "up":
+                self.icon = self.up_icon_path
+            elif trend == "down":
+                self.icon = self.down_icon_path
+            else:
+                self.icon = self.default_icon_path
+        except Exception as e:
+            print(f"Error updating trend icon: {e}")
+            # Fallback ke default icon
+            try:
+                self.icon = self.default_icon_path
+            except:
+                self.icon = None
     
     def load_config(self):
         """Load konfigurasi dari file dengan proper error handling"""
@@ -181,22 +232,22 @@ class CryptoTicker(rumps.App):
                             self.coins = ["bitcoin", "ethereum"]
                         
                         # Validate refresh interval - dengan minimum 60 detik
-                        refresh_interval = config.get('refresh_interval', 90)
+                        refresh_interval = config.get('refresh_interval', 300) # Changed default to 300
                         if isinstance(refresh_interval, int) and refresh_interval >= 60:
                             self.refresh_interval = refresh_interval
                             self.base_refresh_interval = refresh_interval
                         else:
-                            print("Invalid refresh interval in config, using default (90s)")
-                            self.refresh_interval = 90
-                            self.base_refresh_interval = 90
+                            print("Invalid refresh interval in config, using default (300s)")
+                            self.refresh_interval = 300
+                            self.base_refresh_interval = 300
                         
                         # Validate coin cycle interval
-                        cycle_interval = config.get('coin_cycle_interval', 4)
+                        cycle_interval = config.get('coin_cycle_interval', 5) # Changed default to 5
                         if isinstance(cycle_interval, int) and cycle_interval > 0:
                             self.coin_cycle_interval = cycle_interval
                         else:
-                            print("Invalid cycle interval in config, using default (4s)")
-                            self.coin_cycle_interval = 4
+                            print("Invalid cycle interval in config, using default (5s)")
+                            self.coin_cycle_interval = 5
                     else:
                         print("Invalid config format, using defaults")
                         self.reset_to_defaults()
@@ -213,23 +264,30 @@ class CryptoTicker(rumps.App):
     
     def reset_to_defaults(self):
         """Reset ke konfigurasi default"""
-        self.coins = ["bitcoin", "ethereum"]
-        self.refresh_interval = 90
-        self.base_refresh_interval = 90
-        self.coin_cycle_interval = 4
+        with self.coins_lock:
+            self.coins = ["bitcoin", "ethereum"]
+            self.current_coin_index = 0
+        
+        with self.data_lock:
+            self.price_data = {}
+        
+        # Clear cache
+        self.price_cache = {}
+        
+        # Reset intervals
+        self.refresh_interval = 300
+        self.base_refresh_interval = 300
+        self.coin_cycle_interval = 5
+        
+        # Reset rate limiting
+        self.consecutive_rate_limits = 0
+        
+        # Update title
+        self.title = "Loading..."
     
     def save_config(self):
         """Simpan konfigurasi ke file dengan proper error handling"""
         try:
-            # Create backup of current config if it exists
-            if os.path.exists(self.config_file):
-                backup_file = f"{self.config_file}.backup"
-                try:
-                    with open(self.config_file, 'r') as src, open(backup_file, 'w') as dst:
-                        dst.write(src.read())
-                except Exception as e:
-                    print(f"Warning: Could not create config backup: {e}")
-            
             # Save new config
             config = {
                 'coins': self.coins,
@@ -242,15 +300,6 @@ class CryptoTicker(rumps.App):
                 
         except Exception as e:
             print(f"Error saving config: {e}")
-            # Try to restore from backup
-            backup_file = f"{self.config_file}.backup"
-            if os.path.exists(backup_file):
-                try:
-                    with open(backup_file, 'r') as src, open(self.config_file, 'w') as dst:
-                        dst.write(src.read())
-                    print("Config restored from backup")
-                except Exception as restore_error:
-                    print(f"Error restoring config: {restore_error}")
     
     def check_rate_limit(self):
         """Check apakah kita dalam rate limit dan tunggu jika perlu"""
@@ -424,6 +473,8 @@ class CryptoTicker(rumps.App):
         
         if not coins_snapshot:
             self.title = "No Coins"
+            # Set default icon saat tidak ada coins
+            self.update_trend_icon("neutral")
             return
             
         try:
@@ -449,10 +500,14 @@ class CryptoTicker(rumps.App):
                 print(f"Failed to get prices for: {failed_coins}")
             
             self.update_status_bar()
+            # Update menu coins untuk menampilkan harga terbaru
+            self.update_coins_menu()
             
         except Exception as e:
             print(f"Error updating prices: {e}")
             self.title = "Error"
+            # Set default icon saat error
+            self.update_trend_icon("neutral")
     
     def update_status_bar(self):
         """Update status bar dengan harga - thread safe"""
@@ -466,6 +521,8 @@ class CryptoTicker(rumps.App):
         
         if not price_data_snapshot:
             self.title = "Loading..."
+            # Set default icon saat loading
+            self.update_trend_icon("neutral")
             return
         
         # Jika hanya ada 1 coin, tampilkan langsung
@@ -474,17 +531,19 @@ class CryptoTicker(rumps.App):
             if coin_id in price_data_snapshot:
                 data = price_data_snapshot[coin_id]
                 coin_symbol = self.get_symbol_from_coin_id(coin_id)
-                trend_symbol = "▲" if data['trend'] == "up" else "▼" if data['trend'] == "down" else "="
                 
-                # Format price berdasarkan nilai
+                # Update icon berdasarkan trend
+                self.update_trend_icon(data['trend'])
+                
+                # Format price dengan koma ribuan
                 if data['current_price'] < 0.01:
                     price_str = f"${data['current_price']:.6f}"
                 elif data['current_price'] < 1:
                     price_str = f"${data['current_price']:.4f}"
                 elif data['current_price'] < 100:
-                    price_str = f"${data['current_price']:.2f}"
+                    price_str = f"${data['current_price']:,.2f}"
                 else:
-                    price_str = f"${data['current_price']:.0f}"
+                    price_str = f"${data['current_price']:,.0f}"
                 
                 # Tampilkan persentase change jika significant
                 if abs(data['change_percent']) >= 0.1:
@@ -492,10 +551,13 @@ class CryptoTicker(rumps.App):
                 else:
                     change_str = ""
                 
-                self.title = f"{coin_symbol}: {price_str} {trend_symbol}{change_str}"
+                # Title tanpa trend symbol karena sudah menggunakan icon
+                self.title = f"{coin_symbol}: {price_str}{change_str}"
             else:
                 coin_symbol = self.get_symbol_from_coin_id(coins_snapshot[0])
                 self.title = f"{coin_symbol}: Loading..."
+                # Set default icon saat loading
+                self.update_trend_icon("neutral")
             return
         
         # Untuk multiple coins, gunakan cycling dengan current index
@@ -513,26 +575,28 @@ class CryptoTicker(rumps.App):
             if current_coin not in price_data_snapshot:
                 coin_symbol = self.get_symbol_from_coin_id(current_coin)
                 self.title = f"{coin_symbol}: Loading..."
+                # Set default icon saat loading
+                self.update_trend_icon("neutral")
                 return
             
             data = price_data_snapshot[current_coin]
             coin_symbol = self.get_symbol_from_coin_id(current_coin)
-            trend_symbol = "▲" if data['trend'] == "up" else "▼" if data['trend'] == "down" else "="
             
-            # Format price berdasarkan nilai
+            # Update icon berdasarkan trend
+            self.update_trend_icon(data['trend'])
+            
+            # Format price dengan koma ribuan
             if data['current_price'] < 0.01:
                 price_str = f"${data['current_price']:.6f}"
             elif data['current_price'] < 1:
                 price_str = f"${data['current_price']:.4f}"
             elif data['current_price'] < 100:
-                price_str = f"${data['current_price']:.2f}"
+                price_str = f"${data['current_price']:,.2f}"
             else:
-                price_str = f"${data['current_price']:.0f}"
+                price_str = f"${data['current_price']:,.0f}"
             
-            # Tampilkan dengan indikator posisi di depan - format baru: (1/4) ETH: $1234 ▲
-            current_position = current_index + 1
-            total_coins = len(coins_snapshot)
-            self.title = f"{trend_symbol} {coin_symbol}: {price_str}"
+            # Title tanpa trend symbol karena sudah menggunakan icon
+            self.title = f"{coin_symbol}: {price_str}"
     
     def start_price_monitoring(self):
         """Mulai monitoring harga di background dengan adaptive interval"""
@@ -587,6 +651,7 @@ class CryptoTicker(rumps.App):
         self.base_refresh_interval = interval
         self.consecutive_rate_limits = 0  # Reset rate limit counter
         self.save_config()
+        self.update_menu_checkmarks()  # Update checkmarks after setting interval
         
         rumps.notification(
             title="CryptoTicker",
@@ -612,25 +677,6 @@ class CryptoTicker(rumps.App):
             subtitle="Manual Refresh",
             message="Prices updated manually"
         )
-    
-    def manual_next_coin(self, _):
-        """Manual pindah ke coin berikutnya"""
-        with self.coins_lock:
-            coins_count = len(self.coins)
-        
-        if coins_count > 1:
-            self.cycle_to_next_coin()
-            rumps.notification(
-                title="CryptoTicker",
-                subtitle="Switched Coin",
-                message="Moved to next coin manually"
-            )
-        else:
-            rumps.notification(
-                title="CryptoTicker",
-                subtitle="Cannot Switch",
-                message="Need multiple coins to switch"
-            )
     
     def add_coin_dialog(self, _):
         """Dialog untuk input coin symbol"""
@@ -699,10 +745,14 @@ class CryptoTicker(rumps.App):
         if should_save:
             self.save_config()
             self.update_coins_menu()
+            
+            # Fetch data dari API setelah add coin
+            threading.Timer(1.0, self.update_prices).start()
+            
             rumps.notification(
                 title="CryptoTicker",
                 subtitle="Coin Added",
-                message=message
+                message=f"{message}, fetching latest prices..."
             )
         else:
             rumps.notification(
@@ -742,32 +792,19 @@ class CryptoTicker(rumps.App):
             
             self.save_config()
             self.update_coins_menu()
+            
+            # Fetch data dari API setelah remove coin (untuk update coin yang tersisa)
+            if len(self.coins) > 0:
+                threading.Timer(1.0, self.update_prices).start()
+                message += ", updating remaining coins..."
+            else:
+                self.title = "No Coins"
+            
             rumps.notification(
                 title="CryptoTicker",
                 subtitle="Coin Removed",
                 message=message
             )
-    
-    def remove_all_coins(self, _):
-        """Hapus semua coins dengan thread safety"""
-        with self.coins_lock:
-            self.coins = []
-            self.current_coin_index = 0
-        
-        with self.data_lock:
-            self.price_data = {}
-        
-        # Clear cache
-        self.price_cache = {}
-        
-        self.save_config()
-        self.update_coins_menu()
-        self.title = "No Coins"
-        rumps.notification(
-            title="CryptoTicker",
-            subtitle="All Coins Removed",
-            message="All coins have been removed from your watchlist"
-        )
     
     def update_coins_menu(self):
         """Update menu coins saat ini dengan proper cleanup"""
@@ -783,6 +820,9 @@ class CryptoTicker(rumps.App):
         with self.coins_lock:
             coins_snapshot = self.coins.copy()
         
+        with self.data_lock:
+            price_data_snapshot = self.price_data.copy()
+        
         if not coins_snapshot:
             try:
                 self.coins_menu.add(rumps.MenuItem("No coins added"))
@@ -793,7 +833,29 @@ class CryptoTicker(rumps.App):
                 try:
                     # Gunakan symbol untuk display yang lebih user-friendly
                     coin_symbol = self.get_symbol_from_coin_id(coin)
-                    coin_display = f"{coin_symbol} ({coin.replace('-', ' ').title()})"
+                    
+                    # Tampilkan harga jika tersedia
+                    if coin in price_data_snapshot:
+                        price_info = price_data_snapshot[coin]
+                        current_price = price_info['current_price']
+                        
+                        # Format price dengan koma ribuan
+                        if current_price < 0.01:
+                            price_str = f"${current_price:.6f}"
+                        elif current_price < 1:
+                            price_str = f"${current_price:.4f}"
+                        elif current_price < 100:
+                            price_str = f"${current_price:,.2f}"
+                        else:
+                            price_str = f"${current_price:,.0f}"
+                        
+                        # Trend indicator
+                        trend = price_info.get('trend', 'neutral')
+                        trend_symbol = "▲" if trend == "up" else "▼" if trend == "down" else "="
+                        
+                        coin_display = f"{coin_symbol}: {price_str} {trend_symbol}"
+                    else:
+                        coin_display = f"{coin_symbol}: Loading..."
                     
                     coin_menu = rumps.MenuItem(coin_display)
                     coin_menu.add(rumps.MenuItem(f"Remove {coin_symbol}", 
@@ -894,10 +956,27 @@ class CryptoTicker(rumps.App):
         """Set coin cycling interval"""
         self.coin_cycle_interval = interval
         self.save_config()
+        self.update_menu_checkmarks()  # Update checkmarks after setting interval
         rumps.notification(
             title="CryptoTicker",
             subtitle="Coin Cycling Updated",
             message=f"Coin switching interval set to {interval} seconds"
+        )
+
+    def reset_to_default(self, _):
+        """Reset ke konfigurasi default dan update menu"""
+        self.reset_to_defaults()
+        self.save_config()
+        self.update_menu_checkmarks()
+        self.update_coins_menu()
+        
+        # Fetch data dari API setelah reset
+        threading.Timer(1.0, self.update_prices).start()
+        
+        rumps.notification(
+            title="CryptoTicker",
+            subtitle="Reset to Default",
+            message="All settings reset to default, fetching latest prices..."
         )
 
 def main():

@@ -4,29 +4,29 @@
 
 ![CryptoTicker Logo](ticker.png)
 
-_Aplikasi crypto ticker untuk macOS status bar yang menampilkan harga cryptocurrency real-time dengan indikator trend berdasarkan perubahan 24 jam._
+_A crypto ticker application for macOS status bar that displays real-time cryptocurrency prices with trend indicators based on 24-hour changes._
 
 </div>
 
-## Fitur
+## Features
 
-- **Status Bar Integration**: Menampilkan harga crypto langsung di status bar macOS
-- **Real-time Updates**: Update harga otomatis dengan interval yang dapat disesuaikan
-- **Trend Indicators**: Simbol ▲ (naik) atau ▼ (turun) berdasarkan perubahan 24 jam
-- **Multiple Coins**: Dukung multiple cryptocurrency secara bersamaan
-- **Auto Coin Cycling**: Pergantian otomatis antar coins dengan format posisi yang jelas
-- **Interactive Menu**: Menu klik kanan dengan opsi lengkap
-- **Persistent Settings**: Konfigurasi tersimpan otomatis
-- **Optimized API Calls**: Batch API calls untuk mengurangi rate limiting
-- **Clean Output**: Tidak ada warning urllib3 yang mengganggu
+- **Status Bar Integration**: Display crypto prices directly in the macOS status bar
+- **Real-time Updates**: Automatic price updates with customizable intervals
+- **Trend Indicators**: ▲ (up) or ▼ (down) symbols based on 24-hour changes
+- **Multiple Coins**: Support for monitoring multiple cryptocurrencies simultaneously
+- **Auto Coin Cycling**: Automatic switching between coins with clear position indicators
+- **Interactive Menu**: Right-click menu with comprehensive options
+- **Persistent Settings**: Configuration saved automatically
+- **Optimized API Calls**: Batch API calls to reduce rate limiting
+- **Clean Output**: No intrusive urllib3 warnings
 
-## Persyaratan
+## Requirements
 
-- macOS (diperlukan untuk status bar integration)
+- macOS (required for status bar integration)
 - Python 3.6+
-- Internet connection untuk API CoinGecko
+- Internet connection for CoinGecko API
 
-## Instalasi
+## Installation
 
 1. **Clone repository**:
 
@@ -41,138 +41,144 @@ _Aplikasi crypto ticker untuk macOS status bar yang menampilkan harga cryptocurr
    python3 setup.py
    ```
 
-3. **Jalankan aplikasi**:
+3. **Run the application**:
 
    ```bash
    python3 main.py
    ```
 
-## Penggunaan
+## Usage
 
-### Menjalankan Aplikasi
+### Running the Application
 
-Setelah menjalankan aplikasi, ikon crypto ticker akan muncul di status bar macOS. Secara default, aplikasi akan menampilkan Bitcoin dan Ethereum dengan interval refresh 90 detik.
+After running the application, the crypto ticker icon will appear in the macOS status bar. By default, the application will display Bitcoin and Ethereum with a 5-minute refresh interval.
 
 ### Menu Options
 
-Klik kanan pada ikon di status bar untuk mengakses menu:
+Right-click on the status bar icon to access the menu:
 
-1. **Add New Coins**: Tambah cryptocurrency baru dengan memasukkan symbol
+1. **Add New Coins**: Add new cryptocurrencies by entering their symbol
 
-   - Input symbol seperti: BTC, ETH, BNB, ADA, SOL, DOGE, MATIC, dll.
-   - Mendukung 30+ coins populer + pencarian otomatis untuk coins lain
+   - Input symbols like: BTC, ETH, BNB, ADA, SOL, DOGE, MATIC, etc.
+   - Supports 30+ popular coins + automatic search for other coins
+   - Automatically fetches latest prices after adding
 
-2. **Refresh Intervals**: Atur interval update harga
+2. **Refresh Intervals**: Set price update intervals (✓ marks current selection)
 
-   - 1 menit, 90 detik, 2 menit, 3 menit, 5 menit
+   - 1 minute, 5 minutes, 10 minutes
 
-3. **Coin Cycling**: Atur interval pergantian antar coins (jika ada multiple coins)
+3. **Coin Cycling**: Set interval for switching between coins (✓ marks current selection)
 
-   - 2, 3, 4, 5, 6, atau 10 detik dengan pergantian langsung
+   - 3, 5, or 7 seconds with immediate switching
 
-4. **Current Coins**: Lihat dan kelola coins yang sedang dipantau
+4. **Current Coins**: View and manage currently monitored coins
 
+   - Shows real-time prices for each coin (e.g., BTC: $45,000 ▲, ETH: $3,000 ▼)
    - Remove individual coins
+   - Automatically updates remaining coins after removal
 
-5. **Remove All Coins**: Hapus semua coins dari watchlist
+5. **Reset to Default**: Reset all settings to default values
 
-6. **Manual Refresh**: Update harga secara manual
+   - Restores Bitcoin and Ethereum as monitored coins
+   - Resets refresh interval to 5 minutes
+   - Resets coin cycling to 5 seconds
+   - Automatically fetches latest prices after reset
 
-7. **Next Coin**: Pindah manual ke coin berikutnya (untuk multiple coins)
+6. **Manual Refresh**: Update prices manually
 
-8. **Exit**: Keluar dari aplikasi
+7. **Exit**: Exit the application
 
 ### Status Bar Display
 
-Format tampilan di status bar:
+Display format in the status bar:
 
-- **Single coin**: `▼ ETH: $2956`
-- **Multiple coins**: `▲ BTC: $45000 (1/3)` (dengan indikator posisi)
+- **Single coin**: `▼ ETH: $2,956`
+- **Multiple coins**: `▲ BTC: $45,000` (cycling through coins)
 - **Loading**: `ETH: Loading...`
 
-Format baru dengan indikator trend di depan untuk readability yang lebih baik.
+New format with trend indicator upfront for better readability and thousand separators for easier reading.
 
-### Indikator Trend
+### Trend Indicators
 
-- **▲**: Harga naik dalam 24 jam terakhir
-- **▼**: Harga turun dalam 24 jam terakhir
-- **=**: Harga tidak berubah signifikan
+- **▲**: Price increased in the last 24 hours
+- **▼**: Price decreased in the last 24 hours
+- **=**: Price unchanged significantly
 
 ## Supported Symbols
 
-Aplikasi mendukung 30+ cryptocurrency populer dengan symbol mapping otomatis:
+The application supports 30+ popular cryptocurrencies with automatic symbol mapping:
 
 **Major Coins**: BTC, ETH, BNB, ADA, SOL, DOGE, MATIC, LINK, DOT, LTC, BCH, XLM, XRP, AVAX, ATOM, NEAR, FTM, ALGO, TRX, ICP, APT, ARB, OP, SHIB, UNI
 
 **DeFi Tokens**: MKR, CRV, SNX, COMP, SUSHI, LDO
 
-Untuk coins lain yang tidak ada dalam mapping, aplikasi akan mencari otomatis menggunakan CoinGecko search API.
+For other coins not in the mapping, the application will automatically search using the CoinGecko search API.
 
 ## Data API
 
-Aplikasi menggunakan [CoinGecko API](https://www.coingecko.com/api) untuk mendapatkan:
+The application uses the [CoinGecko API](https://www.coingecko.com/api) to fetch:
 
-- Harga real-time cryptocurrency dengan batch calls (optimized)
-- Data perubahan 24 jam untuk menentukan trend
-- Pencarian cryptocurrency berdasarkan symbol
+- Real-time cryptocurrency prices with batch calls (optimized)
+- 24-hour change data to determine trends
+- Cryptocurrency search by symbol
 
 ### API Optimization
 
-- **Batch API Calls**: 95% reduction dalam jumlah API calls
-- **Caching System**: 30 detik cache untuk mengurangi load
-- **Rate Limiting Protection**: Adaptive intervals untuk mencegah rate limiting
-- **Retry Mechanism**: Exponential backoff untuk reliability
+- **Batch API Calls**: 95% reduction in API call count
+- **Caching System**: 30-second cache to reduce load
+- **Rate Limiting Protection**: Adaptive intervals to prevent rate limiting
+- **Retry Mechanism**: Exponential backoff for reliability
 
-## Konfigurasi
+## Configuration
 
-Aplikasi secara otomatis menyimpan konfigurasi dalam file `config.json`:
+The application automatically saves configuration in the `config.json` file:
 
 ```json
 {
   "coins": ["bitcoin", "ethereum"],
-  "refresh_interval": 90,
-  "coin_cycle_interval": 4
+  "refresh_interval": 300,
+  "coin_cycle_interval": 5
 }
 ```
 
 ## Performance Features
 
-- **Thread Safety**: Semua operations menggunakan proper locks
-- **Memory Optimization**: Proper cleanup untuk menu items
-- **Error Handling**: Comprehensive error handling dan recovery
-- **Clean Output**: Suppress urllib3 warnings untuk output yang bersih
+- **Thread Safety**: All operations use proper locks
+- **Memory Optimization**: Proper cleanup for menu items
+- **Error Handling**: Comprehensive error handling and recovery
+- **Clean Output**: Suppress urllib3 warnings for clean output
 
 ## Troubleshooting
 
-### Aplikasi tidak muncul di status bar
+### Application doesn't appear in status bar
 
-- Pastikan menjalankan di macOS
-- Check permission sistem untuk menjalankan aplikasi Python
-- Restart aplikasi jika diperlukan
+- Make sure you're running on macOS
+- Check system permissions for running Python applications
+- Restart the application if necessary
 
-### Error koneksi API
+### API connection errors
 
-- Periksa koneksi internet
-- CoinGecko API mungkin mengalami rate limiting
-- Aplikasi akan otomatis adjust refresh interval jika rate limited
+- Check internet connection
+- CoinGecko API may be experiencing rate limiting
+- Application will automatically adjust refresh interval if rate limited
 
 ### High CPU usage
 
-- Kurangi jumlah coins yang dipantau (aplikasi akan warn jika >8 coins)
-- Tingkatkan refresh interval
-- Restart aplikasi
+- Reduce the number of coins being monitored (app will warn if >8 coins)
+- Increase refresh interval
+- Restart the application
 
-### Monitoring banyak coins
+### Monitoring many coins
 
-- Aplikasi akan otomatis adjust interval untuk banyak coins
-- Warning muncul jika monitoring >8 coins
-- Rate limiting protection akan aktif otomatis
+- Application will automatically adjust interval for many coins
+- Warning appears if monitoring >8 coins
+- Rate limiting protection will activate automatically
 
 ## Dependencies
 
-- `rumps`: Framework untuk membuat aplikasi status bar macOS
-- `requests`: HTTP library untuk API calls
+- `rumps`: Framework for creating macOS status bar applications
+- `requests`: HTTP library for API calls
 
-## Lisensi
+## License
 
 MIT License
