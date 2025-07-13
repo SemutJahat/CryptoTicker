@@ -31,7 +31,7 @@ _A crypto ticker application for macOS status bar that displays real-time crypto
 1. **Clone repository**:
 
    ```bash
-   git clone [repository-url]
+   git clone https://github.com/SemutJahat/CryptoTicker.git
    cd CryptoTicker
    ```
 
