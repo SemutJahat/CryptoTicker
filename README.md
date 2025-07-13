@@ -1,6 +1,12 @@
+<div align="center">
+
 # CryptoTicker
 
-Aplikasi crypto ticker untuk macOS status bar yang menampilkan harga cryptocurrency real-time dengan indikator trend berdasarkan perubahan 24 jam.
+![CryptoTicker Logo](ticker.png)
+
+_Aplikasi crypto ticker untuk macOS status bar yang menampilkan harga cryptocurrency real-time dengan indikator trend berdasarkan perubahan 24 jam._
+
+</div>
 
 ## Fitur
 
